@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraper</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css">
+    <!-- Bootstrap-select component -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta3/css/bootstrap-select.min.css">
+    <!-- Bootstrap icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <style>
+        html,
+        body {
+            width: 100%;
+            min-height: 100%;
+        }
+
+        #extract-button {
+            top: 50px;
+            position: sticky;
+        }
+
+        .spinner-border {
+            width: 18px;
+            height: 18px;
+        }
+
+        .bi.bi-check {
+            color: green;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Responsive navbar-->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <span class="navbar-brand">ITT Scraper</span>
+
+        </div>
+    </nav>
+    <!-- Page content-->
+    <div class="container mt-5">
+        <div class="row">
+            <div id="tree-container" class="col-8"></div>
+            <div class="col-4">
+                <button id="extract-button" class="btn btn-primary" type="button">Извлечи данни</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Tree.js component -->
+    <script src="js/tree.js"></script>
+    <script src="js/category-scraper.js"></script>
+    <script src="js/fetch-products-data.js"></script>
+    <script defer>
+        let tree;
+
+        // loadTreeView().then(() => {
+        loadTreeViewFromLocal().then(() => {
+            let fetchMode = false;
+            document.getElementById("extract-button").addEventListener("click", async (e) => {
+                if (!fetchMode) {
+                    // Filter out the subcategories when constructing the list for scraping.
+                    // Subcategory checkboxes may also be checked and pose as values to be scraped
+                    let selectedTreeNodes = tree.selectedNodes.filter(sn => sn.attributes?.href);
+                    document.querySelectorAll(".bi, .spinner-border").forEach(el => el.remove());
+
+                    let lastSelectedElement;
+                    let lastSpinner;
+
+                    fetchMode = true;
+                    e.target.textContent = "Откажи извличането";
+                    е.target.classList.remove("btn-primary");
+                    e.target.classList.add("btn-danger");
+
+                    for (const stn of selectedTreeNodes) {
+                        if (fetchMode) {
+                            await fetchProductData(stn);
+                        } else break;
+                    }
+                } else {
+                    fetchMode = false;
+                    e.target.textContent = "Извлечи данни";
+                    е.target.classList.add("btn-primary");
+                    e.target.classList.remove("btn-danger");
+                }
+            });
+        });
+
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function loadTreeView() {
+            let iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+
+            await fetch("https://itt-shop.bg/produkti")
+                .then(response => response.text())
+                .then((response) => {
+                    document.body.appendChild(iframe);
+                    iframe.contentDocument.write(response);
+                });
+
+            tree = new Tree("#tree-container", {
+                data: getCategories(iframe.contentDocument),
+                closeDepth: 2
+            });
+        }
+
+        async function loadTreeViewFromLocal() {
+            let categories = await fetch("http://localhost/json/category-data.json")
+                .then(response => response.json());
+            tree = new Tree("#tree-container", {
+                data: categories,
+                closeDepth: 1
+            });
+        }
+    </script>
+</body>
+
+</html>
