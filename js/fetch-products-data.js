@@ -1,5 +1,13 @@
 async function fetchProductData(selectedTreeNode) {
-    // Do something here...
+    // let iframe = document.createElement("iframe");
+    // iframe.style.display = "none";
+
+    // await fetch(selectedTreeNode.attributes.href)
+    //     .then(response => response.text())
+    //     .then((response) => {
+    //         document.body.appendChild(iframe);
+    //         iframe.contentDocument.write(response);
+    //     });
 
     let selectedElement = document.querySelector(`#${selectedTreeNode.id}`);
 
@@ -8,16 +16,12 @@ async function fetchProductData(selectedTreeNode) {
     spinner.role = "status";
 
     selectedElement.insertBefore(spinner, selectedElement.querySelector(".treejs-label").nextElementSibling);
-    lastSelectedElement = selectedElement;
-    lastSpinner = spinner;
 
     await delay(1000);
 
-    if (lastSelectedElement) {
-        let checkIcon = document.createElement("i");
-        checkIcon.classList.add("bi", "bi-check", "ms-2");
+    let checkIcon = document.createElement("i");
+    checkIcon.classList.add("bi", "bi-check", "ms-2");
 
-        lastSelectedElement.removeChild(lastSpinner);
-        lastSelectedElement.insertBefore(checkIcon, lastSelectedElement.querySelector(".treejs-label").nextElementSibling);
-    }
+    selectedElement.removeChild(spinner);
+    selectedElement.insertBefore(checkIcon, selectedElement.querySelector(".treejs-label").nextElementSibling);
 }

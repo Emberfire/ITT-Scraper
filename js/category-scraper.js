@@ -23,7 +23,7 @@ function getCategories(context) {
                 if (categoryChildElement.nextElementSibling?.classList.contains("cats-list__row-ttl")) {
                     delete category.children[category.children.length - 1].children;
                     category.children[category.children.length - 1].attributes = {
-                        href: categoryChildElement.href
+                        href: `${categoryChildElement.href}?order=2&?view=4&per_page=96`
                     }
                 }
             } else {

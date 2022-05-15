@@ -74,24 +74,35 @@
                     let selectedTreeNodes = tree.selectedNodes.filter(sn => sn.attributes?.href);
                     document.querySelectorAll(".bi, .spinner-border").forEach(el => el.remove());
 
-                    let lastSelectedElement;
-                    let lastSpinner;
-
                     fetchMode = true;
                     e.target.textContent = "Откажи извличането";
-                    е.target.classList.remove("btn-primary");
-                    e.target.classList.add("btn-danger");
+                    // е.target.classList.remove("btn-primary");
+                    // e.target.classList.add("btn-danger");
 
-                    for (const stn of selectedTreeNodes) {
-                        if (fetchMode) {
-                            await fetchProductData(stn);
-                        } else break;
+                    let promiseBucket = [];
+                    for (let i = 0; i < selectedTreeNodes.length; i++) {
+                        if (!fetchMode) break;
+
+                        const stn = selectedTreeNodes[i];
+                        promiseBucket.push(fetchProductData(stn));
+
+                        if (i && i % 5 === 0) {
+                            await Promise.all(promiseBucket);
+                            promiseBucket.length = 0;
+                            await delay(Math.floor(Math.random() * (1.3 - 0.7 + 1) + 0.7) * 1000);
+                        }
                     }
+
+                    await Promise.all(promiseBucket);
+                    promiseBucket.length = 0;
+
+                    fetchMode = false;
+                    e.target.textContent = "Извлечи данни";
                 } else {
                     fetchMode = false;
                     e.target.textContent = "Извлечи данни";
-                    е.target.classList.add("btn-primary");
-                    e.target.classList.remove("btn-danger");
+                    // е.target.classList.add("btn-primary");
+                    // e.target.classList.remove("btn-danger");
                 }
             });
         });
