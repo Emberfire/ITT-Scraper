@@ -33,6 +33,10 @@
             color: green;
             font-weight: 700;
         }
+
+        iframe {
+            display: none;
+        }
     </style>
 </head>
 
@@ -60,7 +64,7 @@
     <!-- Tree.js component -->
     <script src="js/tree.js"></script>
     <script src="js/category-scraper.js"></script>
-    <script src="js/fetch-products-data.js"></script>
+    <!-- <script src="js/fetch-products-data.js"></script> -->
     <script defer>
         let tree;
 
@@ -71,7 +75,7 @@
                 if (!fetchMode) {
                     // Filter out the subcategories when constructing the list for scraping.
                     // Subcategory checkboxes may also be checked and pose as values to be scraped
-                    let selectedTreeNodes = tree.selectedNodes.filter(sn => sn.attributes?.href);
+                    let selectedTreeNodes = tree.selectedNodes;
                     document.querySelectorAll(".bi, .spinner-border").forEach(el => el.remove());
 
                     fetchMode = true;
@@ -80,21 +84,54 @@
                     // e.target.classList.add("btn-danger");
 
                     let promiseBucket = [];
+                    let productsData = new Map();
+                    let categoryToFill;
+                    let subcategoryToFill;
+                    let productListToFill;
+
+                    let lastCategoryStn;
+                    let lastSubcategoryStn;
                     for (let i = 0; i < selectedTreeNodes.length; i++) {
                         if (!fetchMode) break;
-
                         const stn = selectedTreeNodes[i];
-                        promiseBucket.push(fetchProductData(stn));
 
-                        if (i && i % 5 === 0) {
-                            await Promise.all(promiseBucket);
-                            promiseBucket.length = 0;
-                            await delay(Math.floor(Math.random() * (1.3 - 0.7 + 1) + 0.7) * 1000);
+                        if (stn.attributes?.type === 0) {
+                            lastCategoryStn && disableSpinner(lastCategoryStn);
+                            lastCategoryStn = stn;
+
+                            categoryToFill = new Map();
+                            productsData.set(stn.text, categoryToFill);
+
+                            enableSpinner(stn);
+                        } else if (stn.attributes?.type === 1) {
+                            lastSubcategoryStn && disableSpinner(lastSubcategoryStn);
+                            lastSubcategoryStn = stn;
+
+                            subcategoryToFill = new Map();
+                            categoryToFill?.set(stn.text, subcategoryToFill);
+
+                            enableSpinner(stn);
+                        } else {
+
+                            productListToFill = new Map();
+                            subcategoryToFill?.set(stn.text, productListToFill);
+
+                            // await fetchProductListData(stn, productListToFill);
+                            // await delay(Math.floor(Math.random() * (1.3 - 0.7 + 1) + 0.7) * 1000);
+                            promiseBucket.push(fetchProductListData(stn, productListToFill));
+
+                            if (i % 5 === 0) {
+                                await Promise.all(promiseBucket);
+                                promiseBucket.length = 0;
+                                await delay(Math.floor(Math.random() * (1.3 - 0.7 + 1) + 0.7) * 1000);
+                            }
                         }
                     }
 
                     await Promise.all(promiseBucket);
                     promiseBucket.length = 0;
+                    disableAllSpinners();
+                    console.log(productsData);
 
                     fetchMode = false;
                     e.target.textContent = "Извлечи данни";
@@ -136,6 +173,50 @@
                 data: categories,
                 closeDepth: 1
             });
+        }
+
+        async function fetchProductListData(selectedTreeNode, productsData) {
+            enableSpinner(selectedTreeNode);
+
+            let response = await fetch(`${selectedTreeNode.attributes.href}?order=2&view=4&per_page=1000`).then(response => response.text());
+            let iframe = document.createElement("iframe");
+            document.body.appendChild(iframe);
+            iframe.contentDocument.write(response);
+            await delay(1000);
+
+            let productData = Array.from(iframe.contentDocument.querySelector(".prods-list__results").children).forEach((productContainer) => {
+                productsData.set(productContainer.querySelector(".product-card__link").title.trim(), Number(productContainer.querySelector(".prices__num")?.textContent?.trim()));
+            });
+
+            disableSpinner(selectedTreeNode);
+            document.body.removeChild(iframe);
+        }
+
+        function enableSpinner(treeNode) {
+            let selectedElement = document.querySelector(`#${treeNode.id}`);
+            let spinner = document.createElement("div");
+            spinner.classList.add("spinner-border", "text-primary", "ms-2");
+            spinner.role = "status";
+            selectedElement.insertBefore(spinner, selectedElement.querySelector(".treejs-label").nextElementSibling);
+        }
+
+        function disableSpinner(treeNode) {
+            let selectedElement = document.querySelector(`#${treeNode.id}`);
+            let checkIcon = document.createElement("i");
+            checkIcon.classList.add("bi", "bi-check", "ms-2");
+            selectedElement.removeChild(selectedElement.querySelector(".spinner-border"));
+            selectedElement.insertBefore(checkIcon, selectedElement.querySelector(".treejs-label").nextElementSibling);
+        }
+
+        function disableAllSpinners() {
+            let selectedElements = Array.from(document.querySelectorAll(".spinner-border")).map((spinner) => spinner.parentElement);
+
+            for (const selectedElement of selectedElements) {
+                let checkIcon = document.createElement("i");
+                checkIcon.classList.add("bi", "bi-check", "ms-2");
+                selectedElement.removeChild(selectedElement.querySelector(".spinner-border"));
+                selectedElement.insertBefore(checkIcon, selectedElement.querySelector(".treejs-label").nextElementSibling);
+            }
         }
     </script>
 </body>

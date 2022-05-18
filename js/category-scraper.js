@@ -3,6 +3,9 @@ function getCategories(context) {
         let category = {
             id: `treejs-${i}`,
             text: categoryArticleElement.querySelector(".bordered-heading span").textContent.trim(),
+            attributes: {
+                type: 0
+            },
             children: []
         };
     
@@ -17,13 +20,17 @@ function getCategories(context) {
                 category.children.push({
                     id: `treejs-${i}-${j}`,
                     text: categoryChildElement.textContent.trim(),
+                    attributes: {
+                        type: 1
+                    },
                     children: []
                 });
     
                 if (categoryChildElement.nextElementSibling?.classList.contains("cats-list__row-ttl")) {
                     delete category.children[category.children.length - 1].children;
                     category.children[category.children.length - 1].attributes = {
-                        href: `${categoryChildElement.href}?order=2&?view=4&per_page=96`
+                        href: `${categoryChildElement.href}`,
+                        type: 2
                     }
                 }
             } else {
@@ -31,7 +38,8 @@ function getCategories(context) {
                     id: `treejs-${i}-${j}-${k}`,
                     text: categoryChildElement.textContent.trim(),
                     attributes: {
-                        href: categoryChildElement.href
+                        href: `${categoryChildElement.href}`,
+                        type: 2
                     }
                 });
                 k++;
